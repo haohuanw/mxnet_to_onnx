@@ -71,7 +71,7 @@ class MxNetToONNXConverter:
     def convert_weights_to_numpy(weights_dict):
         return dict([(k.replace("arg:", "").replace("aux:", ""), v.asnumpy()) for k, v in weights_dict.items()])
   
-    def convert_mx2onnx_graph(self, mx_graph, mx_weights, in_shape, in_type, log=False):
+    def convert_mx2onnx_graph(self, output_idx, mx_graph, mx_weights, in_shape, in_type, log=False):
         print("\nconverting weights from MxNet NDArrays to NumPy arrays.\n")
         weights = MxNetToONNXConverter.convert_weights_to_numpy(mx_weights)
 
@@ -82,6 +82,8 @@ class MxNetToONNXConverter:
         onnx_processed_nodes = []   
         onnx_processed_inputs = []
         onnx_processed_outputs = []
+
+        print("Output Idxes: ", output_idx)
 
         for idx, node in enumerate(mx_graph):
            op = node["op"]
@@ -104,7 +106,7 @@ class MxNetToONNXConverter:
                else:
                    onnx_processed_outputs.append(converted)
            elif isinstance(converted, onnx_pb.NodeProto):
-               if idx < (len(mx_graph) - 1):
+               if idx not in output_idx:
                    onnx_processed_nodes.append(converted)
                else:
                    onnx_processed_nodes.append(converted)

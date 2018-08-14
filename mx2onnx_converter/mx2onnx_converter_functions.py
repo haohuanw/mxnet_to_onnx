@@ -123,6 +123,8 @@ def convert_deconvolution(node, **kwargs):
     stride_dims = list(parse_helper("stride", [1, 1]))
     pad_dims = parse_padding(attrs)
     num_group = int(attrs.get("num_group", 1))
+    adj_dims = list(parse_helper("adj"))
+    #dilations = list(parse_helper("dilate"))
 
     # Not sure why this is included, it seems to change what the graphs is doing.
     # TODO(kellens): Ask Marek if this is requried.
@@ -141,6 +143,8 @@ def convert_deconvolution(node, **kwargs):
         strides=stride_dims,
         pads=pad_dims,
         group=num_group,
+        output_padding=adj_dims,
+        #dilations=dilations,
         name=name
     )
 
@@ -184,6 +188,7 @@ def convert_convolution(node, **kwargs):
     stride_dims = list(parse_helper("stride", [1, 1]))
     pad_dims = parse_padding(attrs)
     num_group = int(attrs.get("num_group", 1))
+    #dilations = list(parse_helper("dilate"))
 
     # Not sure why this is included, it seems to change what the graphs is doing.
     # TODO(kellens): Ask Marek if this is requried.
@@ -202,6 +207,7 @@ def convert_convolution(node, **kwargs):
         strides=stride_dims, 
         pads=pad_dims, 
         group=num_group,
+        #dilations=dilations,
         name=name,
         )
 
@@ -281,9 +287,9 @@ def convert_batchnorm(node, **kwargs):
         name=name,
         epsilon=eps,
         momentum=momentum,
-        is_test=1,
-        spatial=1,
-        consumed_inputs=(0, 0, 0, 1, 1)
+        #is_test=1,
+        spatial=0
+        #consumed_inputs=(0, 0, 0, 1, 1)
     )
 
     return bn_node
@@ -437,17 +443,22 @@ def convert_concat(node, **kwargs):
     proc_nodes = kwargs["proc_nodes"]
     input_names = [proc_nodes[i[0]].name for i in inputs]
     attrs = node["attrs"]
-    border = [0, 0, 0, 0]
+    #border = [0, 0, 0, 0]
     offset = list(eval(attrs['offset']))
-    if len(inputs) == 2:
-        border = inputs[1]
+    print(attrs["h_w"])
+    h_w = list(eval(attrs['h_w']))
+    #if len(inputs) == 2:
+    #    border = inputs[1]
+    h_w_new = [h_w[1]+offset[1], h_w[0]+offset[0]]
+    border = offset + h_w_new 
     axis = int(node.get("attrs", {}).get("axis", 1))
+    print(border)
     concat_node = helper.make_node(
         "Crop",
         input_names,
         [name],
         border=border,
-        scale=offset,
+        scale=(1, 1),
         name=name
     )
     return concat_node

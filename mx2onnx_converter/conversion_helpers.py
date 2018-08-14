@@ -40,9 +40,14 @@ import numpy as np
 def from_mxnet(model_file, weight_file, input_shape, input_type, log=False):
     mx_weights = mx.ndarray.load(weight_file)
     with open(model_file, 'r') as f:
-        graph = json.loads(f.read())["nodes"]
+        json_data = json.loads(f.read())
+        graph = json_data["nodes"]
+        heads = json_data["heads"] 
+    output_idx = []
+    for head in heads:
+        output_idx.append(head[0])
     converter = MxNetToONNXConverter() 
-    onnx_graph = converter.convert_mx2onnx_graph(graph, mx_weights, input_shape, mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(input_type)], log=log)
+    onnx_graph = converter.convert_mx2onnx_graph(output_idx, graph, mx_weights, input_shape, mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(input_type)], log=log)
     onnx_model = helper.make_model(onnx_graph)
     return onnx_model
 
