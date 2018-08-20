@@ -437,7 +437,7 @@ def convert_softmax_output(node, **kwargs):
 
 
 @mx2onnx.register("Crop")
-def convert_concat(node, **kwargs):
+def convert_crop(node, **kwargs):
     name = node["name"]
     inputs = node["inputs"]
     proc_nodes = kwargs["proc_nodes"]
@@ -459,6 +459,38 @@ def convert_concat(node, **kwargs):
         [name],
         border=border,
         scale=(1, 1),
+        name=name
+    )
+    return concat_node
+
+@mx2onnx.register("slice")
+def convert_slice(node, **kwargs):
+    name = node["name"]
+    inputs = node["inputs"]
+    proc_nodes = kwargs["proc_nodes"]
+    input_names = [proc_nodes[i[0]].name for i in inputs]
+    attrs = node["attrs"]
+    begin = list(eval(attrs['begin']))
+    end = list(eval(attrs["end"]))
+    assert len(begin) == len(end), "Start and End shape doesn't match in slice"
+    axes = []
+    starts = []
+    ends = []
+    for axis, b in enumerate(begin):
+        if b is not None:
+            axes.append(axis)
+            starts.append(b)
+            ends.append(end[axis])
+    print(axes)
+    print(starts)
+    print(ends)
+    concat_node = helper.make_node(
+        "Slice",
+        input_names,
+        [name],
+        axes=axes,
+        starts=starts,
+        ends=ends,
         name=name
     )
     return concat_node
